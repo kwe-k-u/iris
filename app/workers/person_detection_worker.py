@@ -5,10 +5,9 @@ import os
 import requests
 import hashlib
 from datetime import datetime, timedelta
-
+from config.config import NOTIFICATION_URL
 
 # Define the Iris server URL
-IRIS_URL = "http://localhost:5000/notify"
 notification_queue = {}
 
 
@@ -31,7 +30,7 @@ def send_notification(message):
         payload = {"message": message}
 
         # Make a POST request to the Iris /notify endpoint
-        response = requests.post(IRIS_URL, json=payload)
+        response = requests.post(NOTIFICATION_URL, json=payload)
 
         # Check the response status
         if response.status_code == 200:
@@ -49,7 +48,9 @@ if __name__ == "__main__":
 		sys.exit(1)
 
 	video_url = sys.argv[1]
-	detect_classes = [0,1,2,3,5,7,16] #16: 'dog',7: 'truck',5: 'bus',0: 'person',1: 'bicycle',2: 'car',3: 'motorcycle'
+	# detect_classes = [0,1,2,3,5,7,16]
+	#16: 'dog',7: 'truck',5: 'bus',0: 'person',1: 'bicycle',2: 'car',3: 'motorcycle'
+	detect_classes = {16: 'dog',7: 'truck',5: 'bus',0: 'person',1: 'bicycle',2: 'car',3: 'motorcycle'}
 	model = YOLO("yolo11m.pt")
 
 	if not os.path.exists(video_url):
@@ -69,7 +70,7 @@ if __name__ == "__main__":
 			break
 
 		# Run inference
-		results = model.track(frame, conf=0.5,classes=detect_classes)
+		results = model.track(frame, conf=0.5,classes=detect_classes.keys())
 
 		if len(results[0].boxes) == 0:
 			send_notification("no person detected")

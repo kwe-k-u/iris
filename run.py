@@ -92,30 +92,32 @@ def status():
 	for _ in list_copy.values():
 		_.pop("process",None)
 	return jsonify(list_copy)
-	# return jsonify({
-	# 	name: {
-	# 		"message": "Here's a list of the running processes",
-	# 		"script": meta["script"],
-	# 		# "args": meta["process_id"]
-	# 	}
-	# 	for name, meta in services_list.items()
-	# })
 
 @app.route('/notify', methods=['POST'])
 def notify():
     data = request.json
+    title = data.get("title", "Notification")  # Default title if none provided
     message = data.get("message")
 
     if not message:
         return jsonify({"error": "No message provided"}), 400
 
-    # Logic for sending notifications to Flutter app or logging the message
-    print(f"Received notification: {message}")
+    try:
+        # Call the notification.py script with the title and message
+        result = subprocess.run(
+            ['python', 'app/utils/notification.py', title, message],  # Adjust the script path if necessary
+            capture_output=True,
+            text=True
+        )
 
-    # Here you would implement code to actually notify the Flutter app.
+        # Check if the script ran successfully
+        if result.returncode == 0:
+            return jsonify({"message": "Notification sent successfully", "output": result.stdout}), 200
+        else:
+            return jsonify({"error": "Failed to send notification", "details": result.stderr}), 500
 
-    return jsonify({"message": "Notification received"}), 200
-
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 if __name__ == "__main__":
 	app.run(host="0.0.0.0", port=5000, debug=True)
