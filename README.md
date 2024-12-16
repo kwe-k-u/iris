@@ -64,10 +64,26 @@ Using Iris API
 
 Iris exposes the following API endpoints:
 - /notify
+```curl
+curl -X POST http://localhost:5000/end_process -H "Content-Type: application/json" -d '{  "message":"<message>"}'
+```
 - /status
+```curl
+curl -X GET http://localhost:5000/status -H "Content-Type: application/json"
+```
 - /end_process
+```curl
+curl -X GET http://localhost:5000/end_process -H "Content-Type: application/json" -d '{  "command": "<command>",  "camera_name" : "<name>"}'
+```
 - /start_process
+```curl
+curl -X GET http://localhost:5000/end_process -H "Content-Type: application/json" -d '{  "command": "<command>",  "camera_name" : "<name>",
+"debug" :"false"}'
+```
 
+
+
+#### /notification
 Method: POST
 
 Send a notification to a connected device. You can specify the message content via JSON.

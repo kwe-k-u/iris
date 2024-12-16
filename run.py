@@ -12,17 +12,17 @@ services_list = {
 	"sentry_mode" : {
 		"script" : "app/workers/person_detection_worker.py",
 		"description" : "Runs an object detection script to send notifications when people are detected in a frame",
-		"is_running" : False
+		"processes" : {}
 	},
 	"trip_wire": {
 		"script" : "app/workers/line_cross.py",
 		"description" : "Runs a script that triggers a notification if a person is detected to cross a boundary line",
-		"is_running" : False
+		"processes" : {}
 	},
 	"say_hi" : {
 		"script" : "app/workers/say_hi.py",
 		"description" : "Runs a script to say hi as a test",
-		"is_running" : False
+		"processes" : {}
 	},
 
 
@@ -34,17 +34,28 @@ def start_process():
 	data = request.json
 	command = data.get("command")
 	script_name = None
-	args = data.get("video_url")
+	camera_name = data.get("camera_name")
+	debug = data.get("debug") or "false"
+	args = data.get('video_url')
+	# args = f"'{data.get('video_url')}' {debug}"
+	# return jsonify({"message": f"python {services_list[command]['script']} {args}"})
+
 
 	if not command in services_list:
 		return jsonify({"error" : "Command does not exist"}),400
 
 	script_name = services_list[command]["script"]
+	# services_list[command].update({camera_name:{}})
+	services_list[command]["processes"].update({camera_name : {}})
 
 	try:
 		process = subprocess.Popen(['python', script_name , args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		services_list[command]["is_running"] = True
-		services_list[command]["process_id"] = process.pid
+		# process = subprocess.Popen(['python', script_name , args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		#ensure that all child processes are terminated if the main process is terminated
+		# _o.setpgid(process.pid, process.pid)  # Set the process group id to the process id
+		# _s.signal(_s.SIGTERM, lambda signum, frame: _o.killpg(process.pid, _s.SIGTERM))  # Ensure child processes are terminated
+		services_list[command]["processes"][camera_name]["is_running"] = True
+		services_list[command]["processes"][camera_name]["process_id"] = process.pid
 		# services_list[command]["process"] = process
 		return jsonify({"message": f"{process.pid}: Command {command} executed successfully"}), 200
 	except Exception as e:
@@ -56,18 +67,19 @@ def end_process():
 	data = request.json
 	# process_name = data.get("name")
 	command = data.get("command")
+	camera_name = data.get("camera_name")
 
 	if command not in services_list:
 		return jsonify({"error" : "Command not found"}),400
 
-	if services_list[command]["is_running"]:
+	if  camera_name in services_list[command]["processes"] and services_list[command]["processes"][camera_name]["is_running"]:
 		try:
-			_o.kill(services_list[command]["process_id"], _s.SIGTERM)
-			del services_list[command]["process_id"]
-			services_list[command]["is_running"] = False
-			return jsonify({"message": f"Successfully terminated command {command}"}), 200
+			_o.kill(services_list[command]["processes"][camera_name]["process_id"], _s.SIGTERM)
+			del services_list[command]["processes"][camera_name]["process_id"]
+			services_list[command]["processes"][camera_name]["is_running"] = False
+			return jsonify({"message": f"Successfully terminated {camera_name}=>{command}"}), 200
 		except Exception as e:
-			return jsonify({"error": f"Failed to terminate command {command}: {str(e)}"}), 500
+			return jsonify({"error": f"Failed to terminate command {camera_name}=>{command}: {str(e)}"}), 500
 	return jsonify({"error": "Command is not running"}),500
 
 	# # if not process_name:

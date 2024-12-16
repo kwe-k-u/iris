@@ -1,6 +1,8 @@
 import firebase_admin
 from firebase_admin import credentials, messaging
 import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 from config.config import FIREBASE_CLOUD_MESSAGING_DEVICE_ID, FIREBASE_CERT_PATH
 
 # Initialize the Firebase Admin SDK
@@ -21,7 +23,8 @@ def send_fcm_notification(token, title, body):
                 title=title,
                 body=body,
             ),
-            token=token,  # Target device's FCM token
+            topic="alerts"
+            # token=token,  # Target device's FCM token
         )
 
         # Send the notification
